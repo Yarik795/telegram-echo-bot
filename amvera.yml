@@ -2,6 +2,7 @@ application:
   name: ehobot
   type: docker
   dockerfile: Dockerfile
+  port: 8080
 
 deploy:
   - source: .

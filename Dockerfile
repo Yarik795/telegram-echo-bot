@@ -11,6 +11,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Копируем код приложения
+COPY web_server.py .
 COPY main.py .
 COPY amvera.yml .
 
@@ -22,4 +23,4 @@ USER appuser
 EXPOSE 8080
 
 # Запускаем приложение
-CMD ["python", "main.py"] 
+CMD ["python", "web_server.py"] 
