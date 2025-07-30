@@ -2,6 +2,7 @@ application:
   name: ehobot
   type: python
   version: 3.9
+  entrypoint: main.py
 
 deploy:
   - source: .
