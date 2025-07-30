@@ -1,0 +1,19 @@
+application:
+  name: ehobot
+  type: python
+  version: 3.9
+
+deploy:
+  - source: .
+    destination: /
+    exclude:
+      - .git
+      - .gitignore
+      - README.md
+      - bot.py
+      - config.py
+      - setup_webhook.py
+      - .amveraignore
+
+environment:
+  - BOT_TOKEN=7052592700:AAEzgL-EsnETAuXhJZPBA6vSLHXgxkKIeOU 

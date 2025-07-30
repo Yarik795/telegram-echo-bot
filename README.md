@@ -32,33 +32,35 @@ python bot.py
 
 ### Деплой на Amvera
 
-1. Подключите ваш GitHub репозиторий к Amvera:
-   - Зайдите на [Amvera.app](https://amvera.app)
+1. Создайте проект на Amvera:
+   - Зайдите на [Amvera.ru](https://amvera.ru)
    - Войдите в аккаунт
-   - Нажмите "New Project"
-   - Выберите ваш репозиторий `telegram-echo-bot`
+   - Создайте новый проект `ehobot`
 
-2. Настройте переменные окружения:
-   - В настройках проекта добавьте переменную `BOT_TOKEN`
-   - Установите значение вашего токена бота
-
-3. Деплойте проект:
-   - Amvera автоматически задеплоит проект при пуше в GitHub
-   - Или нажмите "Deploy" в веб-интерфейсе
-
-4. Настройте webhook:
+2. Подключите репозиторий:
 ```bash
-python setup_webhook.py set https://your-project.amvera.app/api/bot
+git remote add amvera https://git.amvera.ru/y31415/ehobot
 ```
+
+3. Отправьте код на Amvera:
+```bash
+git push amvera master
+```
+
+4. Настройте переменные окружения в веб-интерфейсе Amvera:
+   - `BOT_TOKEN` = `7052592700:AAEzgL-EsnETAuXhJZPBA6vSLHXgxkKIeOU`
+
+5. Запустите деплой в веб-интерфейсе Amvera
 
 ## Структура проекта
 
 - `bot.py` - основной файл бота (локальный запуск)
+- `app.py` - основной файл для Amvera
 - `api/bot.py` - веб-функция для Vercel
 - `config.py` - конфигурация (токен бота)
 - `requirements.txt` - зависимости проекта
 - `setup_webhook.py` - скрипт для настройки webhook
-- `amvera.json` - конфигурация для Amvera
+- `amvera.yml` - конфигурация для Amvera
 - `README.md` - документация
 
 ## Функции
