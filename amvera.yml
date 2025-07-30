@@ -1,8 +1,7 @@
 application:
   name: ehobot
-  type: python
-  version: 3.9
-  entrypoint: main.py
+  type: docker
+  dockerfile: Dockerfile
 
 deploy:
   - source: .
