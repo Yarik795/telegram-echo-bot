@@ -14,6 +14,8 @@ deploy:
       - config.py
       - setup_webhook.py
       - .amveraignore
+      - api/
+      - amvera.json
 
 environment:
   - BOT_TOKEN=7052592700:AAEzgL-EsnETAuXhJZPBA6vSLHXgxkKIeOU 
