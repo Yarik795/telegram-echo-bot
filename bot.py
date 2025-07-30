@@ -1,6 +1,7 @@
 import logging
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
+from config import BOT_TOKEN
 
 # Состояния для разговора
 WAITING_NAME = 1
@@ -25,8 +26,8 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 def main():
-    # Замените 'YOUR_BOT_TOKEN' на токен вашего бота
-    application = Application.builder().token('7052592700:AAEzgL-EsnETAuXhJZPBA6vSLHXgxkKIeOU').build()
+    # Используем токен из конфигурационного файла
+    application = Application.builder().token(BOT_TOKEN).build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],

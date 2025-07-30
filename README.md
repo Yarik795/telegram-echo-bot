@@ -18,9 +18,9 @@ pip install python-telegram-bot
 
 2. Получите токен бота у @BotFather в Telegram
 
-3. Замените токен в файле `bot.py`:
+3. Замените токен в файле `config.py`:
 ```python
-application = Application.builder().token('YOUR_BOT_TOKEN').build()
+BOT_TOKEN = 'YOUR_BOT_TOKEN_HERE'
 ```
 
 4. Запустите бота:
@@ -31,6 +31,7 @@ python bot.py
 ## Структура проекта
 
 - `bot.py` - основной файл бота
+- `config.py` - конфигурация (токен бота)
 - `requirements.txt` - зависимости проекта
 - `README.md` - документация
 
