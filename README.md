@@ -30,28 +30,25 @@ BOT_TOKEN = 'YOUR_BOT_TOKEN_HERE'
 python bot.py
 ```
 
-### Деплой на Vercel (Amvera)
+### Деплой на Amvera
 
-1. Установите Vercel CLI:
-```bash
-npm install -g vercel
-```
+1. Подключите ваш GitHub репозиторий к Amvera:
+   - Зайдите на [Amvera.app](https://amvera.app)
+   - Войдите в аккаунт
+   - Нажмите "New Project"
+   - Выберите ваш репозиторий `telegram-echo-bot`
 
-2. Войдите в аккаунт Vercel:
-```bash
-vercel login
-```
+2. Настройте переменные окружения:
+   - В настройках проекта добавьте переменную `BOT_TOKEN`
+   - Установите значение вашего токена бота
 
 3. Деплойте проект:
-```bash
-vercel --prod
-```
+   - Amvera автоматически задеплоит проект при пуше в GitHub
+   - Или нажмите "Deploy" в веб-интерфейсе
 
-4. Установите переменную окружения `BOT_TOKEN` в настройках Vercel
-
-5. Настройте webhook:
+4. Настройте webhook:
 ```bash
-python setup_webhook.py set https://your-vercel-domain.vercel.app/api/bot
+python setup_webhook.py set https://your-project.amvera.app/api/bot
 ```
 
 ## Структура проекта
@@ -61,7 +58,7 @@ python setup_webhook.py set https://your-vercel-domain.vercel.app/api/bot
 - `config.py` - конфигурация (токен бота)
 - `requirements.txt` - зависимости проекта
 - `setup_webhook.py` - скрипт для настройки webhook
-- `vercel.json` - конфигурация для Vercel
+- `amvera.json` - конфигурация для Amvera
 - `README.md` - документация
 
 ## Функции
