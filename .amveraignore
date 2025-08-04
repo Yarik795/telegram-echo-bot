@@ -1,6 +1,0 @@
-# Исключаем файлы, которые не нужны для деплоя
-bot.py
-config.py
-setup_webhook.py
-.gitignore
-README.md 
