@@ -1,6 +1,8 @@
 import os
 import logging
 import sys
+import asyncio
+import threading
 from pathlib import Path
 from dotenv import load_dotenv
 from telegram import Update
@@ -192,6 +194,22 @@ async def echo_sticker(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     # Отправляем эхо стикера
     await update.message.reply_sticker(update.message.sticker.file_id)
 
+def run_bot_in_thread(application: Application) -> None:
+    """Запускает бота в отдельном потоке с правильным event loop"""
+    def run_bot():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(application.run_polling(allowed_updates=Update.ALL_TYPES))
+        except Exception as e:
+            logger.error(f"Ошибка в боте: {e}")
+        finally:
+            loop.close()
+    
+    bot_thread = threading.Thread(target=run_bot, daemon=True)
+    bot_thread.start()
+    logger.info("Бот запущен в отдельном потоке")
+
 def main() -> None:
     """Запуск бота"""
     # Получаем токен из переменных окружения
@@ -223,7 +241,22 @@ def main() -> None:
     
     # Запускаем бота
     logger.info("Запуск эхо-бота...")
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+    
+    # Проверяем, запущены ли мы в Amvera (есть ли переменная PORT)
+    if os.getenv('PORT'):
+        # Запускаем в отдельном потоке для Amvera
+        run_bot_in_thread(application)
+        
+        # Держим основной поток живым
+        try:
+            while True:
+                import time
+                time.sleep(1)
+        except KeyboardInterrupt:
+            logger.info("Получен сигнал остановки")
+    else:
+        # Обычный запуск для локальной разработки
+        application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
     main() 

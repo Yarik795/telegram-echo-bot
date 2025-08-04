@@ -9,4 +9,7 @@ build:
 
 run:
   command: python echobot/bot.py
-  persistenceMount: /data 
+  persistenceMount: /data
+
+env:
+  PORT: 8080 
