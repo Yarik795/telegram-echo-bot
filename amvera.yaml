@@ -8,8 +8,9 @@ build:
   args: --no-cache-dir
 
 run:
-  command: python echobot/bot.py
+  command: python echobot.py
   persistenceMount: /data
 
 env:
-  PORT: 8080 
+  PORT: 8080
+  BOT_TOKEN: ${BOT_TOKEN} 
