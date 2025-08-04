@@ -83,9 +83,6 @@ async def echo_media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     elif update.message.voice:
         media_type = "голосовое сообщение"
         file_id = update.message.voice.file_id
-    elif update.message.sticker:
-        media_type = "стикер"
-        file_id = update.message.sticker.file_id
     elif update.message.animation:
         media_type = "GIF"
         file_id = update.message.animation.file_id
@@ -108,14 +105,20 @@ async def echo_media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             await update.message.reply_video(file_id, caption=caption, parse_mode='HTML')
         elif update.message.voice:
             await update.message.reply_voice(file_id, caption=caption, parse_mode='HTML')
-        elif update.message.sticker:
-            await update.message.reply_sticker(file_id)
-            if caption != f"🔄 <b>Эхо {media_type}:</b>":
-                await update.message.reply_text(caption, parse_mode='HTML')
         elif update.message.animation:
             await update.message.reply_animation(file_id, caption=caption, parse_mode='HTML')
     else:
         await update.message.reply_text(f"🔄 Получено {media_type}")
+
+async def echo_sticker(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Обработчик стикеров"""
+    user = update.effective_user
+    
+    # Логируем
+    logger.info(f"Получен стикер от {user.id} ({user.username})")
+    
+    # Отправляем эхо стикера
+    await update.message.reply_sticker(update.message.sticker.file_id)
 
 def main() -> None:
     """Запуск бота"""
@@ -138,9 +141,12 @@ def main() -> None:
     # Добавляем обработчики сообщений
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
     application.add_handler(MessageHandler(
-        filters.PHOTO | filters.VIDEO | filters.VOICE | filters.STICKER | filters.ANIMATION,
+        filters.PHOTO | filters.VIDEO | filters.VOICE | filters.ANIMATION,
         echo_media
     ))
+    
+    # Отдельный обработчик для стикеров
+    application.add_handler(MessageHandler(filters.Sticker.ALL, echo_sticker))
     
     # Запускаем бота
     logger.info("Запуск эхо-бота...")
