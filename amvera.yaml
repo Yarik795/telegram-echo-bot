@@ -2,15 +2,10 @@ meta:
   environment: python
   toolchain:
     name: pip
-    version: 3.11
-
+    version: 3.8
 build:
-  args: --no-cache-dir
-
+  requirementsPath: requirements.txt
 run:
-  command: python echobot.py
+  scriptName: app.py
   persistenceMount: /data
-
-env:
-  PORT: 8080
-  BOT_TOKEN: ${BOT_TOKEN}
+  containerPort: 80
