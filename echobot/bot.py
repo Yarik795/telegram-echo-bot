@@ -3,6 +3,7 @@ import logging
 import sys
 import asyncio
 import threading
+import signal
 from pathlib import Path
 from dotenv import load_dotenv
 from telegram import Update
@@ -29,6 +30,23 @@ if data_dir.exists():
     logger.info(f"Используется постоянное хранилище: {data_dir}")
 else:
     logger.info("Постоянное хранилище недоступно, используем временные файлы")
+
+# Глобальная переменная для хранения приложения
+application_instance = None
+
+def signal_handler(signum, frame):
+    """Обработчик сигналов для корректного завершения"""
+    logger.info(f"Получен сигнал {signum}, завершаем работу...")
+    if application_instance:
+        try:
+            # Останавливаем бота асинхронно
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(application_instance.stop())
+            loop.close()
+        except Exception as e:
+            logger.error(f"Ошибка при остановке бота: {e}")
+    sys.exit(0)
 
 def save_statistics(user_id: int, username: str, message_type: str) -> None:
     """Сохраняет статистику использования бота"""
@@ -60,6 +78,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 /help - Показать эту справку
 /status - Показать статус бота
 /stats - Показать статистику использования
+/health - Проверить здоровье бота
 
 <b>Как использовать:</b>
 Просто отправь мне любое сообщение (текст, фото, видео, голосовое сообщение), 
@@ -72,6 +91,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 • Копирует стикеры и GIF
 • Сохраняет статистику использования
 • Оптимизирован для облачного хостинга
+• Мониторинг здоровья системы
     """
     await update.message.reply_html(help_text)
 
@@ -118,6 +138,44 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception as e:
         logger.error(f"Ошибка при чтении статистики: {e}")
         await update.message.reply_text("❌ Ошибка при чтении статистики")
+
+async def health(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Обработчик команды /health - проверка здоровья бота"""
+    import psutil
+    import platform
+    
+    try:
+        # Получаем информацию о системе
+        memory = psutil.virtual_memory()
+        cpu_percent = psutil.cpu_percent(interval=1)
+        
+        health_text = f"🏥 <b>Здоровье бота:</b>\n\n"
+        health_text += f"🖥️ <b>Система:</b>\n"
+        health_text += f"• Платформа: {platform.system()} {platform.release()}\n"
+        health_text += f"• Python: {platform.python_version()}\n"
+        health_text += f"• CPU: {cpu_percent:.1f}%\n"
+        health_text += f"• RAM: {memory.percent:.1f}% ({memory.used // (1024**3):.1f}GB / {memory.total // (1024**3):.1f}GB)\n\n"
+        
+        health_text += f"💾 <b>Хранилище:</b>\n"
+        if data_dir.exists():
+            try:
+                stats_file = data_dir / 'statistics.txt'
+                if stats_file.exists():
+                    size = stats_file.stat().st_size
+                    health_text += f"• Статистика: {size} байт\n"
+                else:
+                    health_text += f"• Статистика: файл не найден\n"
+            except Exception as e:
+                health_text += f"• Статистика: ошибка чтения\n"
+        else:
+            health_text += f"• Постоянное хранилище: недоступно\n"
+        
+        health_text += f"\n✅ <b>Статус:</b> Работает нормально"
+        
+        await update.message.reply_html(health_text)
+    except Exception as e:
+        logger.error(f"Ошибка при проверке здоровья: {e}")
+        await update.message.reply_text("❌ Ошибка при проверке здоровья бота")
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обработчик всех остальных сообщений - эхо"""
@@ -220,14 +278,28 @@ def main() -> None:
         logger.error("Создайте файл .env с BOT_TOKEN=your_token_here")
         return
     
+    # Проверяем валидность токена
+    if not token.startswith('5') or len(token) < 40:
+        logger.error("Неверный формат токена! Токен должен начинаться с '5' и быть длинным")
+        return
+    
     # Создаем приложение
     application = Application.builder().token(token).build()
+    
+    # Сохраняем глобальную ссылку на приложение
+    global application_instance
+    application_instance = application
+    
+    # Настраиваем обработчики сигналов
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
     
     # Добавляем обработчики команд
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("status", status))
     application.add_handler(CommandHandler("stats", stats))
+    application.add_handler(CommandHandler("health", health))
     
     # Добавляем обработчики сообщений
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
