@@ -6,8 +6,12 @@
 
 import os
 import logging
+from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+
+# Загружаем переменные окружения из .env файла (для локальной разработки)
+load_dotenv()
 
 # Настройка логирования для Amvera
 logging.basicConfig(
@@ -50,6 +54,8 @@ def main() -> None:
     
     if not token:
         logger.error("BOT_TOKEN не найден в переменных окружения!")
+        logger.error("Для локальной разработки создайте файл .env с BOT_TOKEN=your_token_here")
+        logger.error("Для Amvera добавьте переменную BOT_TOKEN в настройках приложения")
         return
     
     # Создаем приложение
