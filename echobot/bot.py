@@ -1,5 +1,7 @@
 import os
 import logging
+import sys
+from pathlib import Path
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
@@ -7,16 +9,38 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 # Загружаем переменные окружения
 load_dotenv()
 
-# Настройка логирования
+# Настройка логирования для Amvera
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    level=logging.INFO,
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler('/data/bot.log') if Path('/data').exists() else logging.NullHandler()
+    ]
 )
 logger = logging.getLogger(__name__)
+
+# Создаем папку для данных если её нет
+data_dir = Path('/data')
+if data_dir.exists():
+    data_dir.mkdir(exist_ok=True)
+    logger.info(f"Используется постоянное хранилище: {data_dir}")
+else:
+    logger.info("Постоянное хранилище недоступно, используем временные файлы")
+
+def save_statistics(user_id: int, username: str, message_type: str) -> None:
+    """Сохраняет статистику использования бота"""
+    try:
+        stats_file = data_dir / 'statistics.txt' if data_dir.exists() else Path('statistics.txt')
+        with open(stats_file, 'a', encoding='utf-8') as f:
+            f.write(f"{user_id},{username},{message_type}\n")
+    except Exception as e:
+        logger.warning(f"Не удалось сохранить статистику: {e}")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обработчик команды /start"""
     user = update.effective_user
+    save_statistics(user.id, user.username or "unknown", "start")
     await update.message.reply_html(
         f"Привет, {user.mention_html()}! 👋\n\n"
         "Я простой эхо-бот. Просто отправь мне любое сообщение, "
@@ -33,6 +57,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 /start - Начать работу с ботом
 /help - Показать эту справку
 /status - Показать статус бота
+/stats - Показать статистику использования
 
 <b>Как использовать:</b>
 Просто отправь мне любое сообщение (текст, фото, видео, голосовое сообщение), 
@@ -43,6 +68,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 • Сохраняет форматирование текста
 • Работает с эмодзи
 • Копирует стикеры и GIF
+• Сохраняет статистику использования
+• Оптимизирован для облачного хостинга
     """
     await update.message.reply_html(help_text)
 
@@ -51,14 +78,53 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         "✅ Бот работает нормально!\n"
         "🟢 Статус: Активен\n"
-        "📊 Версия: 1.0.0"
+        "📊 Версия: 1.0.0\n"
+        "🌐 Хостинг: Amvera"
     )
+
+async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Обработчик команды /stats - показывает статистику использования"""
+    try:
+        stats_file = data_dir / 'statistics.txt' if data_dir.exists() else Path('statistics.txt')
+        if stats_file.exists():
+            with open(stats_file, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+            
+            if lines:
+                total_messages = len(lines)
+                unique_users = len(set(line.split(',')[0] for line in lines))
+                
+                # Подсчитываем типы сообщений
+                message_types = {}
+                for line in lines:
+                    msg_type = line.strip().split(',')[2]
+                    message_types[msg_type] = message_types.get(msg_type, 0) + 1
+                
+                stats_text = f"📊 <b>Статистика бота:</b>\n\n"
+                stats_text += f"📈 Всего сообщений: {total_messages}\n"
+                stats_text += f"👥 Уникальных пользователей: {unique_users}\n\n"
+                stats_text += f"📝 <b>По типам:</b>\n"
+                
+                for msg_type, count in sorted(message_types.items()):
+                    stats_text += f"• {msg_type}: {count}\n"
+                
+                await update.message.reply_html(stats_text)
+            else:
+                await update.message.reply_text("📊 Статистика пока пуста")
+        else:
+            await update.message.reply_text("📊 Файл статистики не найден")
+    except Exception as e:
+        logger.error(f"Ошибка при чтении статистики: {e}")
+        await update.message.reply_text("❌ Ошибка при чтении статистики")
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обработчик всех остальных сообщений - эхо"""
     # Получаем информацию о пользователе
     user = update.effective_user
     chat_type = update.effective_chat.type
+    
+    # Сохраняем статистику
+    save_statistics(user.id, user.username or "unknown", "text")
     
     # Логируем сообщение
     logger.info(f"Получено сообщение от {user.id} ({user.username}) в {chat_type}: {update.message.text}")
@@ -90,6 +156,9 @@ async def echo_media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         media_type = "медиа-файл"
         file_id = None
     
+    # Сохраняем статистику
+    save_statistics(user.id, user.username or "unknown", media_type)
+    
     # Логируем
     logger.info(f"Получено {media_type} от {user.id} ({user.username})")
     
@@ -114,6 +183,9 @@ async def echo_sticker(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     """Обработчик стикеров"""
     user = update.effective_user
     
+    # Сохраняем статистику
+    save_statistics(user.id, user.username or "unknown", "стикер")
+    
     # Логируем
     logger.info(f"Получен стикер от {user.id} ({user.username})")
     
@@ -137,6 +209,7 @@ def main() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("status", status))
+    application.add_handler(CommandHandler("stats", stats))
     
     # Добавляем обработчики сообщений
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))

@@ -1,0 +1,12 @@
+meta:
+  environment: python
+  toolchain:
+    name: pip
+    version: 3.11
+
+build:
+  args: --no-cache-dir
+
+run:
+  command: python echobot/bot.py
+  persistenceMount: /data 
